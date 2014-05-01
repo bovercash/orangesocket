@@ -1,0 +1,3 @@
+RXTScomm.jar goes in %JAVA_HOME%/lib/ext
+
+rxtxParallel.dll and rxtxSerial.dll go in %JAVA_HOME%/bin

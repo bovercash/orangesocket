@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html>
+<head>
+    <title>Serial Communication with Arduino via Camel WebSockets</title>
+    <link rel="stylesheet" type="text/css" href="./css/colorpicker.css">
+    <link rel="stylesheet" type="text/css" href="./css/page.css">
+    <style type='text/css'>
+        div { border: 0px solid black; }
+        div#logWindow { clear: both; width: 800px; height: 60ex; overflow: auto; background-color: #f0f0f0; padding: 4px; border: 1px solid black; }
+    </style>
+</head>
+<body>
+<h2>Serial Communication with Arduino via Camel WebSockets</h2>
+<div id="logWindow"></div>
+<div>
+	<input id="jsInput" size="20"  type="text" name="input" value=""/>
+	<button type="button" id="jsSubmit" name="submit" onclick="sendToArduino();">Send To Arduino</button>
+</div>
+<br/>
+<div><button type="button" id="jsPing" name="submit" onclick="ping();">Ping</button></div>
+<div><button type="button" id="jsStop" name="submit" onclick="stopConnection();">Stop</button></div>
+<div class="section">
+	<span>Try the Color Picker UI</span>
+	<div style="position:relative;">
+		<div id="colorselector">
+			<div style="background-color: #EFEFEF"></div>
+		</div>
+	</div>
+</div> 
+<script type='text/javascript' src="./scripts/jquery-1.8.3.js"></script>
+<script type='text/javascript' src="./scripts/colorpicker.js"></script>
+<script type='text/javascript'>
+
+	if (!window.WebSocket) {
+		alert("WebSocket not supported by this browser");
+	}
+		
+	function addMessage(msg){
+		var out=$("#logWindow");
+		out.append('<span class="text">' + msg + '</span><br/>');
+	    var eOut = out.get();
+	    out.scrollTop(
+	            out[0].scrollHeight - out.height()
+	        );
+	};
+		
+	var arduino = {
+	    connect: function() {
+	        var location = "ws://localhost:8080/arduino";
+	        this._ws=new WebSocket(location);
+	        this._ws.onmessage=this._onmessage;
+	        this._ws.onclose=this._onclose;
+	        
+	    },
+	    
+	    send: function(m){
+	    	if(this._ws){
+	    		this._ws.send(m);
+	    		addMessage(">> " + m.toString());
+	    	}
+	    },
+	    
+	
+	    _onmessage: function(m) {
+	        if (m.data){
+	        	addMessage("<< " + m.data.toString());
+	        }
+	    },
+	
+	    _onclose: function(m) {
+	    	this._ws=null;
+	    }
+	};
+	
+	function sendToArduino(){
+		var msg = $("#jsInput").val();
+		if(msg){
+			arduino.send(msg);
+			$("#jsInput").val("");
+		}
+	};
+	
+	function ping(){
+		arduino.send("PING");
+	};
+	
+	function stopConnection(){
+		var eot = String.fromCharCode(4);
+		arduino.send(eot);
+	};
+	
+	
+	function pad(num, size) {
+	    var s = "000" + num.toString();
+	    return s.substr(s.length-size);
+	}
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~
+	arduino.connect();	
+	$('#colorselector').ColorPicker({
+        color: '#EFEFEF',
+        onShow: function (colpkr) {
+            $(colpkr).fadeIn(500);
+            return false;
+        },
+        onHide: function (colpkr) {
+            $(colpkr).fadeOut(500);
+            return false;
+        },
+        onChange: function (hsb, hex, rgb) {
+            $('#colorselector div').css('backgroundColor', '#' + hex);
+            var red = pad(rgb.r,3);
+            var green = pad(rgb.g,3);
+            var blue = pad(rgb.b,3);
+            if(arduino){
+            	arduino.send("D01" + red + green + blue);
+            }
+            
+        }
+    });
+	
+	
+</script>
+</body>
+</html>

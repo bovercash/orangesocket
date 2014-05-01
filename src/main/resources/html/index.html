@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<html>
+<head>
+    <title>Serial Communication with Arduino via Camel WebSockets</title>
+    <script type='text/javascript'>
+
+        if (!window.WebSocket) {
+        alert("WebSocket not supported by this browser");
+        }
+
+        function $() { return document.getElementById(arguments[0]); };
+        
+        function addMessage(msg){
+        	var out=$("logWindow");
+	        var spanText = document.createElement('span');
+	        spanText.className='text';
+	        spanText.innerHTML=msg;
+	        var lineBreak = document.createElement('br');
+	        out.appendChild(spanText);
+	        out.appendChild(lineBreak);
+	        out.scrollTop = out.scrollHeight - out.clientHeight;
+        };
+
+        var arduino = {
+	        connect: function() {
+		        var location = "ws://localhost:8080/arduino";
+		        this._ws=new WebSocket(location);
+		        this._ws.onmessage=this._onmessage;
+		        this._ws.onclose=this._onclose;
+		        
+	        },
+	        
+	        
+	        
+	        send: function(m){
+	        	if(this._ws){
+	        		this._ws.send(m);
+	        		addMessage(">> " + m);
+	        	}
+	        },
+	        
+
+	        _onmessage: function(m) {
+		        if (m.data){
+		        	addMessage("<< " + m.data);
+		        }
+	        },
+	
+	        _onclose: function(m) {
+	        	this._ws=null;
+	        }
+        };
+        
+       
+
+        function sendToArduino(){
+        	var msg = $("jsInput").value;
+        	if(msg){
+        		arduino.send(msg);
+        		$("jsInput").value = "";
+        	}
+        };
+        
+        function ping(){
+        	arduino.send("PING");
+        };
+        
+        function stopConnection(){
+        	var eot = String.fromCharCode(4);
+        	arduino.send(eot);
+        };
+    </script>
+    <style type='text/css'>
+        div { border: 0px solid black; }
+        div#logWindow { clear: both; width: 800px; height: 60ex; overflow: auto; background-color: #f0f0f0; padding: 4px; border: 1px solid black; }
+    </style>
+</head>
+<body>
+<h2>Serial Communication with Arduino via Camel WebSockets</h2>
+<div id="logWindow"></div>
+<div>
+	<input id="jsInput" size="20"  type="text" name="input" value=""/>
+	<button type="button" id="jsSubmit" name="submit" onclick="sendToArduino();">Send To Arduino</button>
+</div>
+<br/>
+<div><button type="button" id="jsPing" name="submit" onclick="ping();">Ping</button></div>
+<div><button type="button" id="jsStop" name="submit" onclick="stopConnection();">Stop</button></div>
+<script type='text/javascript'>
+    arduino.connect();
+</script>
+</body>
+</html>
